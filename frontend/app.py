@@ -362,32 +362,31 @@ st.markdown(
 st.markdown('<div class="section-title">Trends &amp; Recent Analysis</div>', unsafe_allow_html=True)
 
 with st.expander("Trend charts and recent analysis table", expanded=detailed):
-   history = data["history"]
-   t1, t2, t3 = st.columns(3)
-   with t1:
-      st.plotly_chart(trend_line(history, "Risk", "Risk Trend (%)", AMBER), width="stretch")
-   with t2:
-       st.plotly_chart(trend_line(history, "Anomaly", "Anomaly Trend", RED), width="stretch")
-   with t3:
-       st.plotly_chart(trend_line(history, "Prediction", "Prediction Trend (168h)", CYAN,
-                               threshold=data["threshold"]), width="stretch")
+    history = data["history"]
 
-st.markdown('<div class="kpi-label" style="margin:0.6rem 0 0.4rem 0">Recent analysis (newest first)</div>',
-            unsafe_allow_html=True)
+    t1, t2, t3 = st.columns(3)
+    with t1:
+        st.plotly_chart(trend_line(history, "Risk", "Risk Trend (%)", AMBER), width="stretch")
+    with t2:
+        st.plotly_chart(trend_line(history, "Anomaly", "Anomaly Trend", RED), width="stretch")
+    with t3:
+        st.plotly_chart(trend_line(history, "Prediction", "Prediction Trend (168h)", CYAN,
+                                   threshold=data["threshold"]), width="stretch")
 
-table = history.iloc[::-1].copy()
-table["Time"] = table["Time"].dt.strftime("%d %b, %H:%M")
-table["Risk"] = table["Risk"].astype(str) + "%"
+    st.markdown('<div class="kpi-label" style="margin:0.6rem 0 0.4rem 0">Recent analysis (newest first)</div>',
+                unsafe_allow_html=True)
 
+    table = history.iloc[::-1].copy()
+    table["Time"] = table["Time"].dt.strftime("%d %b, %H:%M")
+    table["Risk"] = table["Risk"].astype(str) + "%"
 
-def color_decision(value):
-    return f"color: {DECISION_COLORS[value]}; font-weight: 700"
+    def color_decision(value):
+        return f"color: {DECISION_COLORS[value]}; font-weight: 700"
 
-
-styled = (table.style
-          .format({"Anomaly": "{:.2f}", "Prediction": "{:.1f}"})
-          .map(color_decision, subset=["QA Decision"]))
-st.dataframe(styled, hide_index=True, width="stretch")
+    styled = (table.style
+              .format({"Anomaly": "{:.2f}", "Prediction": "{:.1f}"})
+              .map(color_decision, subset=["QA Decision"]))
+    st.dataframe(styled, hide_index=True, width="stretch")
 
 # ---------- EXPORT ----------
 st.markdown('<div class="section-title">Export</div>', unsafe_allow_html=True)
