@@ -32,3 +32,13 @@ def to_dashboard_format(raw):
     history["Time"] = pd.to_datetime(history["Time"])
     data["history"] = history
     return data
+
+
+
+def backend_online():
+    """True if the backend answers at all (any HTTP reply counts). Used only for the status pill."""
+    try:
+        requests.get(API_URL, timeout=2)
+        return True
+    except requests.RequestException:
+        return False

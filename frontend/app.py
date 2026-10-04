@@ -3,9 +3,14 @@ import streamlit as st
 import time
 from utils.demo_data import get_demo_data
 from utils.report import build_report
-from utils.api import get_api_data
+from utils.api import get_api_data, backend_online
 from utils.charts import prediction_chart, anomaly_scatter, risk_gauge, importance_chart, lime_chart, trend_line
 USE_API = False     # False = demo data (works anywhere).  True = real FastAPI backend.
+PREDICTED_UNIT = ""     # unit of the predicted 168h value. Not defined yet, so left empty. Ask the model team.
+
+def demo_note():
+    if not USE_API:
+        st.caption("Demo values: sample data, not real model output.")
 st.set_page_config(page_title="SIH26170 | AI Risk Monitoring", layout="wide")
 
 # ---------- STYLES (all custom CSS lives here) ----------
@@ -77,14 +82,29 @@ CSS = """
 .why-title { color: #22d3ee; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.15em;
              text-transform: uppercase; }
 .why-text { color: #e6edf7; font-size: 1.02rem; line-height: 1.6; margin-top: 0.4rem; }
+
+/* ---- POLISH OVERRIDES ---- */
+.section-title { font-size: 0.85rem; color: #9fb0cc; margin: 2rem 0 0.8rem 0; }
+.kpi-label { font-size: 0.78rem; }
+.kpi-sub { font-size: 0.85rem; }
+.pill { font-size: 0.75rem; }
+.pill-bad { color: #f87171; border-color: #f8717155; background: #f8717114; }
+.dot { background: currentColor; }
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
 
 # ---------- HEADER ----------
 now = datetime.now().strftime("%d %b %Y, %H:%M:%S")
-mode_pill = ('<span class="pill pill-ok">LIVE</span>' if USE_API
-             else '<span class="pill pill-demo">DEMO MODE</span>')
+if not USE_API:
+    mode_pill = '<span class="pill pill-demo">DEMO MODE</span>'
+    backend_pill = '<span class="pill pill-demo"><span class="dot"></span>Backend: Not connected</span>'
+elif backend_online():
+    mode_pill = '<span class="pill pill-ok">LIVE MODE</span>'
+    backend_pill = '<span class="pill pill-ok"><span class="dot"></span>Backend connected</span>'
+else:
+    mode_pill = '<span class="pill pill-bad">LIVE MODE</span>'
+    backend_pill = '<span class="pill pill-bad"><span class="dot"></span>Backend unreachable</span>'
 
 st.markdown(f"""
 <div class="header">
@@ -95,7 +115,7 @@ st.markdown(f"""
 </div>
 <div class="pills">
 {mode_pill}
-<span class="pill pill-ok"><span class="dot"></span>SYSTEM ONLINE</span>
+{backend_pill}
 <span class="pill pill-time">Updated {now}</span>
 </div>
 </div>
@@ -168,7 +188,7 @@ if run_clicked:
 GREEN, AMBER, ORANGE, RED, CYAN = "#34d399", "#fbbf24", "#fb923c", "#f87171", "#22d3ee"
 
 RISK_COLORS = {"Low": GREEN, "Moderate": CYAN, "Elevated": AMBER, "Critical": RED}
-DECISION_COLORS = {"PASS": GREEN, "MONITOR": AMBER, "EXTEND": ORANGE, "REJECT": RED}
+DECISION_COLORS = {"PASS": GREEN, "MONITOR": AMBER, "EXTEND": CYAN, "REJECT": RED}
 
 
 def kpi_card(label, value, sub, color, tip, delay):
@@ -190,16 +210,16 @@ else:
     anomaly_sub, anomaly_color = "Within normal range", GREEN
 
 predicted = data["predicted_168h"]
-if predicted >= 75:
-    pred_sub, pred_color = "Within acceptable range", GREEN
+if predicted >= data["threshold"]:
+    pred_sub, pred_color = f'Above threshold ({data["threshold"]})', GREEN
 else:
-    pred_sub, pred_color = "Below acceptable range", RED
+    pred_sub, pred_color = f'Below threshold ({data["threshold"]})', RED
 
 cards = [
     kpi_card("Overall Risk Score", f'{data["risk_score"]}%', data["risk_label"],
              RISK_COLORS[data["risk_label"]],
              "Combined risk from anomaly, drift and prediction signals.", 0.0),
-    kpi_card("Predicted 168h Value", predicted, pred_sub, pred_color,
+    kpi_card("Predicted 168h Value", f"{predicted}{PREDICTED_UNIT}", pred_sub, pred_color,
              "Model forecast of the performance value after 168 burn-in hours.", 0.1),
     kpi_card("Anomaly Score", anomaly, anomaly_sub, anomaly_color,
              "How unusual this unit is compared with normal units. Higher means more unusual.", 0.2),
@@ -344,6 +364,7 @@ with rules_col:
 
 # ---------- EXPLAINABILITY ----------
 st.markdown('<div class="section-title">Explainability</div>', unsafe_allow_html=True)
+demo_note()
 
 with st.expander("Feature importance and LIME charts", expanded=detailed):
     ex_left, ex_right = st.columns(2)
@@ -396,10 +417,10 @@ report_html = build_report(component, lot, time_window, data)
 
 d1, d2 = st.columns(2)
 with d1:
-    st.download_button("Download results (CSV)", csv_bytes,
+    st.download_button("Download CSV", csv_bytes,
                        file_name=f"SIH26170_{component}_{lot}_results.csv",
                        mime="text/csv", width="stretch")
 with d2:
-    st.download_button("Download analysis report (HTML)", report_html,
+    st.download_button("Download HTML Report", report_html,
                        file_name=f"SIH26170_{component}_{lot}_report.html",
                        mime="text/html", width="stretch")
