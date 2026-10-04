@@ -2,6 +2,7 @@ from datetime import datetime
 import streamlit as st
 from utils.demo_data import get_demo_data
 from utils.charts import prediction_chart, anomaly_scatter
+from utils.charts import prediction_chart, anomaly_scatter, risk_gauge
 
 st.set_page_config(page_title="SIH26170 | AI Risk Monitoring", layout="wide")
 
@@ -45,6 +46,16 @@ CSS = """
           border-radius: 10px; padding: 1rem 1.2rem; margin-bottom: 1rem; }
 .banner-title { color: var(--accent); font-weight: 700; letter-spacing: 0.08em; font-size: 1.05rem; }
 .banner-text { color: #c7d2e5; font-size: 0.88rem; margin-top: 0.35rem; line-height: 1.5; }
+
+.meter { background: #111a2e; border: 1px solid #1e2a44; border-radius: 10px;
+         padding: 0.9rem 1.1rem; margin-bottom: 0.8rem; }
+.meter-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.55rem; }
+.meter-name { color: #c7d2e5; font-size: 0.9rem; font-weight: 600; }
+.meter-status { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; }
+.meter-track { height: 8px; background: #1e2a44; border-radius: 999px; overflow: hidden; }
+.meter-fill { height: 100%; border-radius: 999px; background: var(--accent);
+              width: var(--pct); animation: grow 0.9s ease; }
+@keyframes grow { from {width: 0;} }
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
@@ -195,3 +206,59 @@ with right:
                  "Combined anomaly score from Module A.", 0.2),
     ]
     st.markdown('<div class="kpi-grid">' + "".join(mini_cards) + "</div>", unsafe_allow_html=True)
+
+# ---------- RISK ENGINE ----------
+st.markdown('<div class="section-title">Risk Engine</div>', unsafe_allow_html=True)
+
+
+def meter(name, pct, status, color, tip):
+    return (
+        f'<div class="meter" title="{tip}" style="--accent:{color}; --pct:{pct}%">'
+        f'<div class="meter-top"><span class="meter-name">{name}</span>'
+        f'<span class="meter-status" style="color:{color}">{status}</span></div>'
+        f'<div class="meter-track"><div class="meter-fill"></div></div>'
+        f'</div>'
+    )
+
+
+def level(pct):
+    if pct >= 67:
+        return "HIGH", RED
+    if pct >= 34:
+        return "MEDIUM", AMBER
+    return "LOW", GREEN
+
+
+anomaly_pct = min(100, round(anomaly / 4.2 * 100))
+a_status, a_color = level(anomaly_pct)
+d_status, d_color = level(data["drift_pct"])
+
+slope_pct = data["slope_pct"]
+if slope_pct < 50:
+    s_status, s_color = "NORMAL", GREEN
+elif slope_pct < 80:
+    s_status, s_color = "WATCH", AMBER
+else:
+    s_status, s_color = "STEEP", RED
+
+g_col, m_col = st.columns([2, 3])
+
+with g_col:
+    st.markdown(
+        f'<div class="kpi-label" style="text-align:center">Overall Risk &nbsp;•&nbsp; '
+        f'<span style="color:{RISK_COLORS[data["risk_label"]]}">{data["risk_label"]}</span></div>',
+        unsafe_allow_html=True,
+    )
+    st.plotly_chart(risk_gauge(data["risk_score"], RISK_COLORS[data["risk_label"]]),
+                    use_container_width=True)
+
+with m_col:
+    st.markdown(
+        meter("Anomaly Risk", anomaly_pct, a_status, a_color,
+              "Risk from Module A anomaly detection (Mahalanobis + LOF).")
+        + meter("Drift Risk", data["drift_pct"], d_status, d_color,
+                "How far readings drift away from their starting values over time.")
+        + meter("Safety Slope", slope_pct, s_status, s_color,
+                "How much of the allowed degradation slope has been used. 100% means the limit is reached."),
+        unsafe_allow_html=True,
+    )

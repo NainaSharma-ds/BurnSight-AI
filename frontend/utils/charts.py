@@ -66,3 +66,27 @@ def anomaly_scatter(population, unit_xy, anomaly_score, unit_color):
     style(fig)
     fig.update_layout(hovermode="closest")
     return fig
+
+
+
+def risk_gauge(value, color):
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=value,
+        number=dict(suffix="%", font=dict(color="#f1f5f9", size=46)),
+        gauge=dict(
+            axis=dict(range=[0, 100], tickcolor=GRID, tickfont=dict(color=TEXT)),
+            bar=dict(color=color, thickness=0.28),
+            bgcolor=NAVY_CARD,
+            borderwidth=0,
+            steps=[
+                dict(range=[0, 35], color="rgba(52,211,153,0.15)"),
+                dict(range=[35, 60], color="rgba(34,211,238,0.12)"),
+                dict(range=[60, 80], color="rgba(251,191,36,0.15)"),
+                dict(range=[80, 100], color="rgba(248,113,113,0.18)"),
+            ],
+        ),
+    ))
+    fig.update_layout(height=290, paper_bgcolor="rgba(0,0,0,0)",
+                      font=dict(color=TEXT), margin=dict(l=25, r=25, t=30, b=10))
+    return fig

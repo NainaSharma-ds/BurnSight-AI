@@ -54,6 +54,8 @@ def get_demo_data(component, lot, time_window):
         anomaly_status = "NORMAL"
         anomaly_note = "This unit behaves like the normal population. No unusual deviation detected."
 
+    drift_pct = rng.randint(15, 85)    # how far readings drift over time (fake)
+    slope_pct = rng.randint(10, 90)    # how much of the allowed degradation slope is used (fake)
     population, unit_xy = make_population(seed, anomaly_score)
 
     return {
@@ -70,6 +72,8 @@ def get_demo_data(component, lot, time_window):
         "anomaly_note": anomaly_note,
         "population": population,
         "unit_xy": unit_xy,
+        "drift_pct": drift_pct,
+        "slope_pct": slope_pct,
     }
 
 
