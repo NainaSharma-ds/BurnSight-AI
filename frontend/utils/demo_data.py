@@ -36,6 +36,8 @@ def get_demo_data(component, lot, time_window):
     qa_decision, qa_reason, qa_rules = build_qa(predicted_168h, anomaly_score, drift_pct, slope_pct)
 
     trend = make_trend(rng, predicted_168h)
+    features, importance, contributions = make_explain(seed, anomaly_score, drift_pct, slope_pct)
+    why_text = build_why(contributions)
 
     # --- Module A style numbers (fake) ---
     mahalanobis = round(anomaly_score * rng.uniform(1.2, 1.8), 2)
@@ -73,6 +75,10 @@ def get_demo_data(component, lot, time_window):
         "unit_xy": unit_xy,
         "drift_pct": drift_pct,
         "slope_pct": slope_pct,
+        "features": features,
+        "importance": importance,
+        "contributions": contributions,
+        "why_text": why_text,
     }
 
 
@@ -158,3 +164,42 @@ def make_population(seed, anomaly_score):
     angle = nrng.uniform(0, 2 * math.pi)
     unit_xy = (anomaly_score * math.cos(angle), anomaly_score * math.sin(angle))
     return population, unit_xy
+
+
+
+FEATURES = ["Temperature", "Pressure", "Vibration", "Humidity", "Current", "Voltage"]
+
+
+def make_explain(seed, anomaly_score, drift_pct, slope_pct):
+    """FAKE explainability numbers. Real ones will come from the backend
+    (permutation importance + LIME)."""
+    erng = np.random.default_rng(seed + 7)
+
+    base = erng.uniform(0.05, 0.35, size=len(FEATURES))
+    base[0] += anomaly_score / 12            # temperature matters more when anomaly is high
+    base[1] += drift_pct / 400               # pressure matters more when drift is high
+    importance = pd.DataFrame({"Feature": FEATURES, "Importance": np.round(base, 3)})
+    importance = importance.sort_values("Importance")      # smallest first -> biggest on top
+
+    signs = erng.choice([-1, 1], size=len(FEATURES), p=[0.35, 0.65])
+    contrib = np.round(signs * base * erng.uniform(0.6, 1.1, size=len(FEATURES)), 2)
+    contributions = pd.DataFrame({"Feature": FEATURES, "Contribution": contrib})
+    contributions["abs"] = contributions["Contribution"].abs()
+    contributions = contributions.sort_values("abs", ascending=False).drop(columns="abs")
+    return FEATURES, importance, contributions.reset_index(drop=True)
+
+
+def build_why(contributions):
+    """Turns the contribution table into a plain-English sentence."""
+    up = contributions[contributions["Contribution"] > 0]["Feature"].str.lower().tolist()[:2]
+    down = contributions[contributions["Contribution"] < 0]["Feature"].str.lower().tolist()[:2]
+
+    if up:
+        text = f"The elevated risk is primarily influenced by {' and '.join(up)}"
+    else:
+        text = "No feature is pushing the risk upward"
+    if down:
+        text += f", while {' and '.join(down)} help keep the risk down."
+    else:
+        text += "."
+    return text

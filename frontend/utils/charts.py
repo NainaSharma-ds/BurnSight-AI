@@ -90,3 +90,34 @@ def risk_gauge(value, color):
     fig.update_layout(height=290, paper_bgcolor="rgba(0,0,0,0)",
                       font=dict(color=TEXT), margin=dict(l=25, r=25, t=30, b=10))
     return fig
+
+
+
+def importance_chart(importance):
+    fig = go.Figure(go.Bar(
+        x=importance["Importance"], y=importance["Feature"], orientation="h",
+        marker=dict(color=CYAN),
+        hovertemplate="%{y}<br>Importance: %{x}<extra></extra>",
+    ))
+    fig.update_xaxes(title="Importance (drop in model accuracy when shuffled)")
+    fig.update_layout(title="Permutation Feature Importance")
+    style(fig, height=340)
+    fig.update_layout(hovermode="closest")
+    return fig
+
+
+def lime_chart(contributions):
+    data = contributions.iloc[::-1]          # biggest on top
+    colors = [RED if v > 0 else GREEN for v in data["Contribution"]]
+    fig = go.Figure(go.Bar(
+        x=data["Contribution"], y=data["Feature"], orientation="h",
+        marker=dict(color=colors),
+        text=[f"{v:+.2f}" for v in data["Contribution"]], textposition="outside",
+        hovertemplate="%{y}<br>Contribution: %{x:+.2f}<extra></extra>",
+    ))
+    fig.add_vline(x=0, line_color=TEXT, line_width=1)
+    fig.update_xaxes(title="Pushes risk down  ←  →  pushes risk up")
+    fig.update_layout(title="LIME Feature Contribution")
+    style(fig, height=340)
+    fig.update_layout(hovermode="closest")
+    return fig

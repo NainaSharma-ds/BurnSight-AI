@@ -3,6 +3,7 @@ import streamlit as st
 from utils.demo_data import get_demo_data
 from utils.charts import prediction_chart, anomaly_scatter
 from utils.charts import prediction_chart, anomaly_scatter, risk_gauge
+from utils.charts import prediction_chart, anomaly_scatter, risk_gauge, importance_chart, lime_chart
 
 st.set_page_config(page_title="SIH26170 | AI Risk Monitoring", layout="wide")
 
@@ -69,6 +70,12 @@ CSS = """
         font-size: 0.92rem; padding: 0.55rem 0; border-bottom: 1px solid #1e2a44; }
 .rule:last-child { border-bottom: none; }
 .rule-icon { font-weight: 700; width: 1.1rem; }
+
+.why { background: #111a2e; border: 1px solid #1e2a44; border-left: 4px solid #22d3ee;
+       border-radius: 10px; padding: 1rem 1.3rem; margin-top: 0.5rem; }
+.why-title { color: #22d3ee; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.15em;
+             text-transform: uppercase; }
+.why-text { color: #e6edf7; font-size: 1.02rem; line-height: 1.6; margin-top: 0.4rem; }
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
@@ -305,3 +312,18 @@ with rules_col:
         f'<div class="rules-box"><div class="kpi-label">Rules that contributed</div>{rule_rows}</div>',
         unsafe_allow_html=True,
     )
+
+# ---------- EXPLAINABILITY ----------
+st.markdown('<div class="section-title">Explainability</div>', unsafe_allow_html=True)
+
+ex_left, ex_right = st.columns(2)
+with ex_left:
+    st.plotly_chart(importance_chart(data["importance"]), use_container_width=True)
+with ex_right:
+    st.plotly_chart(lime_chart(data["contributions"]), use_container_width=True)
+
+st.markdown(
+    f'<div class="why"><div class="why-title">Why this prediction?</div>'
+    f'<div class="why-text">{data["why_text"]}</div></div>',
+    unsafe_allow_html=True,
+)
