@@ -77,50 +77,57 @@ def get_demo_data(component, lot, time_window):
 
 
 def build_qa(predicted, anomaly, drift_pct, slope_pct):
-    """Checks each QA rule. Every rule is (status, text) where status is ok / warn / fail."""
-    rules = []
+    """Checks each QA rule. Every rule is (status, text) where status is ok / warn / fail.
+    Also builds a sentence naming the exact problems."""
+    rules = []     # shown as the checklist in the UI
+    issues = []    # short names of problems, used in the reason sentence
 
     if predicted >= THRESHOLD:
         rules.append(("ok", "Prediction within expected range"))
     else:
         rules.append(("fail", "Predicted 168h value is below the acceptance threshold"))
+        issues.append("predicted 168h value below threshold")
 
     if anomaly <= 2:
         rules.append(("ok", "Anomaly score is normal"))
     elif anomaly <= 3:
         rules.append(("warn", "Elevated anomaly score"))
+        issues.append("elevated anomaly score")
     else:
         rules.append(("fail", "High anomaly score: unit is an outlier"))
+        issues.append("high anomaly score")
 
     if slope_pct < 50:
         rules.append(("ok", "Safety slope acceptable"))
     elif slope_pct < 80:
         rules.append(("warn", "Safety slope is approaching its limit"))
+        issues.append("safety slope approaching its limit")
     else:
         rules.append(("fail", "Safety slope exceeds the allowed limit"))
+        issues.append("safety slope above the limit")
 
     if drift_pct < 40:
         rules.append(("ok", "Drift over burn-in is low"))
     else:
         rules.append(("warn", "Noticeable drift over burn-in"))
+        issues.append("noticeable drift over burn-in")
 
     fails = sum(1 for status, _ in rules if status == "fail")
     warns = sum(1 for status, _ in rules if status == "warn")
+    problems = ", ".join(issues).capitalize()
 
     if fails >= 2 or rules[0][0] == "fail":
         decision = "REJECT"
-        reason = ("Predicted 168h performance or multiple safety checks fall outside "
-                  "acceptable limits. This unit should not be shipped.")
+        reason = f"{problems}. This unit should not be shipped."
         rules.append(("fail", "Unit should be rejected"))
     elif fails == 1:
         decision = "EXTEND"
-        reason = ("One safety check failed while the predicted 168h value is still acceptable. "
+        reason = (f"{problems}; predicted 168h value is still acceptable. "
                   "Extending burn-in would give the model more data to confirm the result.")
         rules.append(("warn", "Extended burn-in recommended"))
     elif warns >= 1:
         decision = "MONITOR"
-        reason = (f"{warns} warning signal(s) detected while predicted 168h performance "
-                  "remains within the acceptable operating range.")
+        reason = f"{problems} detected; predicted 168h value remains within acceptable range."
         rules.append(("warn", "Requires monitoring"))
     else:
         decision = "PASS"
