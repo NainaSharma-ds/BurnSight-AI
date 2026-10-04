@@ -115,11 +115,12 @@ This helps explore how changes in early component behaviour can affect the final
    MODULE A: ANOMALY              MODULE B: PREDICTION
       DETECTION                       168h Forecast
           ↓                             ↓
-   24h Early Screening             XGBoost
-          ↓                             ↓
-   96h Re-screening            Predicted 168h Value
-          ↓                             ↓
- Mahalanobis + LOF                     │
+   24h Early Screening             0h + 24h
+          ↓                        + Early Drift
+   96h Re-screening                     ↓
+          ↓                          XGBoost
+ Mahalanobis + LOF                     ↓
+          │                    Predicted 168h
           └──────────────┬──────────────┘
                          ↓
                     RISK ENGINE
