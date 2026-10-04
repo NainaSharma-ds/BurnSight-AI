@@ -190,16 +190,18 @@ def make_explain(seed, anomaly_score, drift_pct, slope_pct):
 
 
 def build_why(contributions):
-    """Turns the contribution table into a plain-English sentence."""
-    up = contributions[contributions["Contribution"] > 0]["Feature"].str.lower().tolist()[:2]
-    down = contributions[contributions["Contribution"] < 0]["Feature"].str.lower().tolist()[:2]
+    """Turns the contribution table into a plain-English sentence (with the numbers)."""
+    ups = contributions[contributions["Contribution"] > 0].head(2)
+    downs = contributions[contributions["Contribution"] < 0].head(2)
 
-    if up:
-        text = f"The elevated risk is primarily influenced by {' and '.join(up)}"
-    else:
-        text = "No feature is pushing the risk upward"
-    if down:
-        text += f", while {' and '.join(down)} help keep the risk down."
-    else:
-        text += "."
-    return text
+    def describe(rows):
+        return " and ".join(f"{r.Feature.lower()} ({r.Contribution:+.2f})" for r in rows.itertuples())
+
+    parts = []
+    if len(ups):
+        parts.append(f"Risk is pushed up by {describe(ups)}")
+    if len(downs):
+        parts.append(f"{describe(downs)} pull it down")
+    if not parts:
+        return "No feature has a meaningful influence on this prediction."
+    return "; ".join(parts) + "."

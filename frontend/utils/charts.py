@@ -3,7 +3,7 @@ import plotly.graph_objects as go
 NAVY_CARD = "#111a2e"
 GRID = "#1e2a44"
 TEXT = "#c7d2e5"
-CYAN, AMBER, RED = "#22d3ee", "#fbbf24", "#f87171"
+CYAN, AMBER, RED, GREEN = "#22d3ee", "#fbbf24", "#f87171", "#34d399"
 
 
 def style(fig, height=420):
@@ -109,14 +109,16 @@ def importance_chart(importance):
 def lime_chart(contributions):
     data = contributions.iloc[::-1]          # biggest on top
     colors = [RED if v > 0 else GREEN for v in data["Contribution"]]
+    limit = max(abs(data["Contribution"])) * 1.4      # extra room so labels are not cut
     fig = go.Figure(go.Bar(
         x=data["Contribution"], y=data["Feature"], orientation="h",
         marker=dict(color=colors),
         text=[f"{v:+.2f}" for v in data["Contribution"]], textposition="outside",
+        cliponaxis=False,
         hovertemplate="%{y}<br>Contribution: %{x:+.2f}<extra></extra>",
     ))
     fig.add_vline(x=0, line_color=TEXT, line_width=1)
-    fig.update_xaxes(title="Pushes risk down  ←  →  pushes risk up")
+    fig.update_xaxes(title="Pushes risk down  ←  →  pushes risk up", range=[-limit, limit])
     fig.update_layout(title="LIME Feature Contribution")
     style(fig, height=340)
     fig.update_layout(hovermode="closest")
