@@ -9,7 +9,7 @@ Instead of relying only on fixed parametric limits, the system analyses **lot-re
 
 ---
 
-## 🚀 What Does BurnSight-AI Do?
+##  What Does BurnSight-AI Do?
 
 The system works in two stages:
 
@@ -34,7 +34,7 @@ The predicted degradation is then compared with a reference safety boundary.
 
 ---
 
-## 🧠 QA Decision Engine
+##  QA Decision Engine
 
 The system combines anomaly detection and future-risk prediction to generate an explainable decision:
 
@@ -70,7 +70,7 @@ The strongest predictive features were **early drift and percentage drift**, sho
 
 ---
 
-## 💡 Explainable AI
+##  Explainable AI
 
 BurnSight-AI provides explanations for its predictions using:
 
@@ -84,7 +84,7 @@ Example:
 
 ---
 
-## 🧪 What-If Simulation
+##  What-If Simulation
 
 The system also supports **What-If analysis**.
 
