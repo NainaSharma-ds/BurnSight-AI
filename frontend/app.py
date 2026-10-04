@@ -1,5 +1,6 @@
 from datetime import datetime
 import streamlit as st
+import time
 from utils.demo_data import get_demo_data
 from utils.report import build_report
 from utils.charts import prediction_chart, anomaly_scatter, risk_gauge, importance_chart, lime_chart, trend_line
@@ -137,6 +138,17 @@ with st.sidebar:
 
 # ---------- LOAD DATA (demo for now) ----------
 data = get_demo_data(component, lot, time_window)
+detailed = (mode == "Detailed Analysis")
+
+# ---------- RUN ANALYSIS FEEDBACK ----------
+if run_clicked:
+    with st.status("Running analysis...", expanded=True) as status:
+        for step in ["Loading burn-in data", "Preprocessing features",
+                     "Module A: anomaly detection", "Module B: 168h prediction",
+                     "Risk engine and QA decision", "Generating explanations"]:
+            st.write(f"✓ {step}")
+            time.sleep(0.4)
+        status.update(label="Analysis complete (demo data)", state="complete", expanded=False)
 
 # ---------- KPI CARDS ----------
 GREEN, AMBER, ORANGE, RED, CYAN = "#34d399", "#fbbf24", "#fb923c", "#f87171", "#22d3ee"
@@ -185,45 +197,50 @@ cards = [
 st.markdown('<div class="kpi-grid">' + "".join(cards) + "</div>", unsafe_allow_html=True)
 
 # ---------- PREDICTION TREND ----------
-st.plotly_chart(prediction_chart(data["trend"], data["threshold"]), width="stretch")
+hours_available = int(time_window.replace("h", ""))
+trend_view = data["trend"].copy()
+trend_view.loc[trend_view["Hour"] > hours_available, "Actual"] = None   # no measurements after the window
+
+st.plotly_chart(prediction_chart(trend_view, data["threshold"]), width="stretch")
 
 # ---------- ANOMALY ANALYSIS ----------
 st.markdown('<div class="section-title">Anomaly Analysis</div>', unsafe_allow_html=True)
+with st.expander("Anomaly details: Mahalanobis, LOF and scatter plot", expanded=detailed):
 
-status = data["anomaly_status"]
-status_color = {"NORMAL": GREEN, "ELEVATED": AMBER, "ANOMALY DETECTED": RED}[status]
+    status = data["anomaly_status"]
+    status_color = {"NORMAL": GREEN, "ELEVATED": AMBER, "ANOMALY DETECTED": RED}[status]
 
-maha = data["mahalanobis"]
-maha_sub, maha_color = ("High", RED) if maha > 4 else ("Moderate", AMBER) if maha > 2.5 else ("Low", GREEN)
+    maha = data["mahalanobis"]
+    maha_sub, maha_color = ("High", RED) if maha > 4 else ("Moderate", AMBER) if maha > 2.5 else ("Low", GREEN)
 
-lof = data["lof"]
-lof_sub, lof_color = ("Isolated point", RED) if lof > 1.5 else ("Normal density", GREEN)
+    lof = data["lof"]
+    lof_sub, lof_color = ("Isolated point", RED) if lof > 1.5 else ("Normal density", GREEN)
 
-left, right = st.columns([3, 2])
+    left, right = st.columns([3, 2])
 
-with left:
-    st.plotly_chart(
-        anomaly_scatter(data["population"], data["unit_xy"], anomaly, status_color),
-        width="stretch",
-    )
+    with left:
+        st.plotly_chart(
+            anomaly_scatter(data["population"], data["unit_xy"], anomaly, status_color),
+            width="stretch",
+        )
 
-with right:
-    st.markdown(
-        f'<div class="banner" style="--accent:{status_color}">'
-        f'<div class="banner-title">{status}</div>'
-        f'<div class="banner-text">{data["anomaly_note"]}</div>'
-        f'</div>',
-        unsafe_allow_html=True,
-    )
-    mini_cards = [
-        kpi_card("Mahalanobis Distance", maha, maha_sub, maha_color,
-                 "Distance from the centre of normal data, accounting for feature correlations.", 0.0),
-        kpi_card("LOF Score", lof, lof_sub, lof_color,
-                 "Local Outlier Factor. Near 1 = similar density to neighbours; much higher = isolated.", 0.1),
-        kpi_card("Anomaly Score", anomaly, anomaly_sub, anomaly_color,
-                 "Combined anomaly score from Module A.", 0.2),
-    ]
-    st.markdown('<div class="kpi-grid">' + "".join(mini_cards) + "</div>", unsafe_allow_html=True)
+    with right:
+        st.markdown(
+            f'<div class="banner" style="--accent:{status_color}">'
+            f'<div class="banner-title">{status}</div>'
+            f'<div class="banner-text">{data["anomaly_note"]}</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+        mini_cards = [
+            kpi_card("Mahalanobis Distance", maha, maha_sub, maha_color,
+                    "Distance from the centre of normal data, accounting for feature correlations.", 0.0),
+            kpi_card("LOF Score", lof, lof_sub, lof_color,
+                    "Local Outlier Factor. Near 1 = similar density to neighbours; much higher = isolated.", 0.1),
+            kpi_card("Anomaly Score", anomaly, anomaly_sub, anomaly_color,
+                    "Combined anomaly score from Module A.", 0.2),
+        ]
+        st.markdown('<div class="kpi-grid">' + "".join(mini_cards) + "</div>", unsafe_allow_html=True)
 
 # ---------- RISK ENGINE ----------
 st.markdown('<div class="section-title">Risk Engine</div>', unsafe_allow_html=True)
@@ -314,11 +331,12 @@ with rules_col:
 # ---------- EXPLAINABILITY ----------
 st.markdown('<div class="section-title">Explainability</div>', unsafe_allow_html=True)
 
-ex_left, ex_right = st.columns(2)
-with ex_left:
-    st.plotly_chart(importance_chart(data["importance"]), width="stretch")
-with ex_right:
-    st.plotly_chart(lime_chart(data["contributions"]), width="stretch")
+with st.expander("Feature importance and LIME charts", expanded=detailed):
+    ex_left, ex_right = st.columns(2)
+    with ex_left:
+        st.plotly_chart(importance_chart(data["importance"]), width="stretch")
+    with ex_right:
+        st.plotly_chart(lime_chart(data["contributions"]), width="stretch")
 
 st.markdown(
     f'<div class="why"><div class="why-title">Why this prediction?</div>'
@@ -329,15 +347,15 @@ st.markdown(
 # ---------- TRENDS & RECENT ANALYSIS ----------
 st.markdown('<div class="section-title">Trends &amp; Recent Analysis</div>', unsafe_allow_html=True)
 
-history = data["history"]
-
-t1, t2, t3 = st.columns(3)
-with t1:
-    st.plotly_chart(trend_line(history, "Risk", "Risk Trend (%)", AMBER), width="stretch")
-with t2:
-    st.plotly_chart(trend_line(history, "Anomaly", "Anomaly Trend", RED), width="stretch")
-with t3:
-    st.plotly_chart(trend_line(history, "Prediction", "Prediction Trend (168h)", CYAN,
+with st.expander("Trend charts and recent analysis table", expanded=detailed):
+   history = data["history"]
+   t1, t2, t3 = st.columns(3)
+   with t1:
+      st.plotly_chart(trend_line(history, "Risk", "Risk Trend (%)", AMBER), width="stretch")
+   with t2:
+       st.plotly_chart(trend_line(history, "Anomaly", "Anomaly Trend", RED), width="stretch")
+   with t3:
+       st.plotly_chart(trend_line(history, "Prediction", "Prediction Trend (168h)", CYAN,
                                threshold=data["threshold"]), width="stretch")
 
 st.markdown('<div class="kpi-label" style="margin:0.6rem 0 0.4rem 0">Recent analysis (newest first)</div>',
