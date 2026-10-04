@@ -56,6 +56,19 @@ CSS = """
 .meter-fill { height: 100%; border-radius: 999px; background: var(--accent);
               width: var(--pct); animation: grow 0.9s ease; }
 @keyframes grow { from {width: 0;} }
+
+.decision { background: #111a2e; border: 1px solid var(--accent); border-radius: 12px;
+            padding: 1.4rem 1.5rem; box-shadow: 0 0 24px -8px var(--accent);
+            animation: fadeUp 0.5s ease both; }
+.decision-label { color: var(--accent); font-size: 2.6rem; font-weight: 800;
+                  letter-spacing: 0.06em; margin: 0.4rem 0 0.6rem 0; }
+.rules-box { background: #111a2e; border: 1px solid #1e2a44; border-radius: 12px;
+             padding: 1.2rem 1.4rem; }
+.rules-box .kpi-label { margin-bottom: 0.4rem; }
+.rule { display: flex; gap: 0.7rem; align-items: flex-start; color: #c7d2e5;
+        font-size: 0.92rem; padding: 0.55rem 0; border-bottom: 1px solid #1e2a44; }
+.rule:last-child { border-bottom: none; }
+.rule-icon { font-weight: 700; width: 1.1rem; }
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
@@ -260,5 +273,35 @@ with m_col:
                 "How far readings drift away from their starting values over time.")
         + meter("Safety Slope", slope_pct, s_status, s_color,
                 "How much of the allowed degradation slope has been used. 100% means the limit is reached."),
+        unsafe_allow_html=True,
+    )
+
+# ---------- QA DECISION ENGINE ----------
+st.markdown('<div class="section-title">QA Decision Engine</div>', unsafe_allow_html=True)
+
+decision = data["qa_decision"]
+decision_color = DECISION_COLORS[decision]
+ICONS = {"ok": ("✓", GREEN), "warn": ("⚠", AMBER), "fail": ("✕", RED)}
+
+rule_rows = ""
+for kind, text in data["qa_rules"]:
+    icon, icon_color = ICONS[kind]
+    rule_rows += f'<div class="rule"><span class="rule-icon" style="color:{icon_color}">{icon}</span>{text}</div>'
+
+dec_col, rules_col = st.columns([2, 3])
+
+with dec_col:
+    st.markdown(
+        f'<div class="decision" style="--accent:{decision_color}">'
+        f'<div class="kpi-label">QA Decision</div>'
+        f'<div class="decision-label">{decision}</div>'
+        f'<div class="banner-text">{data["qa_reason"]}</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+with rules_col:
+    st.markdown(
+        f'<div class="rules-box"><div class="kpi-label">Rules that contributed</div>{rule_rows}</div>',
         unsafe_allow_html=True,
     )
