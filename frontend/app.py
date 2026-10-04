@@ -1,10 +1,8 @@
 from datetime import datetime
 import streamlit as st
 from utils.demo_data import get_demo_data
-from utils.charts import prediction_chart, anomaly_scatter
-from utils.charts import prediction_chart, anomaly_scatter, risk_gauge
-from utils.charts import prediction_chart, anomaly_scatter, risk_gauge, importance_chart, lime_chart , trend_line
-
+from utils.report import build_report
+from utils.charts import prediction_chart, anomaly_scatter, risk_gauge, importance_chart, lime_chart, trend_line
 st.set_page_config(page_title="SIH26170 | AI Risk Monitoring", layout="wide")
 
 # ---------- STYLES (all custom CSS lives here) ----------
@@ -187,7 +185,7 @@ cards = [
 st.markdown('<div class="kpi-grid">' + "".join(cards) + "</div>", unsafe_allow_html=True)
 
 # ---------- PREDICTION TREND ----------
-st.plotly_chart(prediction_chart(data["trend"], data["threshold"]), use_container_width=True)
+st.plotly_chart(prediction_chart(data["trend"], data["threshold"]), width="stretch")
 
 # ---------- ANOMALY ANALYSIS ----------
 st.markdown('<div class="section-title">Anomaly Analysis</div>', unsafe_allow_html=True)
@@ -206,7 +204,7 @@ left, right = st.columns([3, 2])
 with left:
     st.plotly_chart(
         anomaly_scatter(data["population"], data["unit_xy"], anomaly, status_color),
-        use_container_width=True,
+        width="stretch",
     )
 
 with right:
@@ -270,7 +268,7 @@ with g_col:
         unsafe_allow_html=True,
     )
     st.plotly_chart(risk_gauge(data["risk_score"], RISK_COLORS[data["risk_label"]]),
-                    use_container_width=True)
+                    width="stretch")
 
 with m_col:
     st.markdown(
@@ -318,9 +316,9 @@ st.markdown('<div class="section-title">Explainability</div>', unsafe_allow_html
 
 ex_left, ex_right = st.columns(2)
 with ex_left:
-    st.plotly_chart(importance_chart(data["importance"]), use_container_width=True)
+    st.plotly_chart(importance_chart(data["importance"]), width="stretch")
 with ex_right:
-    st.plotly_chart(lime_chart(data["contributions"]), use_container_width=True)
+    st.plotly_chart(lime_chart(data["contributions"]), width="stretch")
 
 st.markdown(
     f'<div class="why"><div class="why-title">Why this prediction?</div>'
@@ -335,12 +333,12 @@ history = data["history"]
 
 t1, t2, t3 = st.columns(3)
 with t1:
-    st.plotly_chart(trend_line(history, "Risk", "Risk Trend (%)", AMBER), use_container_width=True)
+    st.plotly_chart(trend_line(history, "Risk", "Risk Trend (%)", AMBER), width="stretch")
 with t2:
-    st.plotly_chart(trend_line(history, "Anomaly", "Anomaly Trend", RED), use_container_width=True)
+    st.plotly_chart(trend_line(history, "Anomaly", "Anomaly Trend", RED), width="stretch")
 with t3:
     st.plotly_chart(trend_line(history, "Prediction", "Prediction Trend (168h)", CYAN,
-                               threshold=data["threshold"]), use_container_width=True)
+                               threshold=data["threshold"]), width="stretch")
 
 st.markdown('<div class="kpi-label" style="margin:0.6rem 0 0.4rem 0">Recent analysis (newest first)</div>',
             unsafe_allow_html=True)
@@ -354,5 +352,23 @@ def color_decision(value):
     return f"color: {DECISION_COLORS[value]}; font-weight: 700"
 
 
-st.dataframe(table.style.map(color_decision, subset=["QA Decision"]),
-             hide_index=True, use_container_width=True)
+styled = (table.style
+          .format({"Anomaly": "{:.2f}", "Prediction": "{:.1f}"})
+          .map(color_decision, subset=["QA Decision"]))
+st.dataframe(styled, hide_index=True, width="stretch")
+
+# ---------- EXPORT ----------
+st.markdown('<div class="section-title">Export</div>', unsafe_allow_html=True)
+
+csv_bytes = data["history"].to_csv(index=False).encode("utf-8")
+report_html = build_report(component, lot, time_window, data)
+
+d1, d2 = st.columns(2)
+with d1:
+    st.download_button("Download results (CSV)", csv_bytes,
+                       file_name=f"SIH26170_{component}_{lot}_results.csv",
+                       mime="text/csv", width="stretch")
+with d2:
+    st.download_button("Download analysis report (HTML)", report_html,
+                       file_name=f"SIH26170_{component}_{lot}_report.html",
+                       mime="text/html", width="stretch")
