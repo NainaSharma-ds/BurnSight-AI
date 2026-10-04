@@ -16,7 +16,7 @@ st.set_page_config(page_title="SIH26170 | AI Risk Monitoring", layout="wide")
 # ---------- STYLES (all custom CSS lives here) ----------
 CSS = """
 <style>
-.block-container { padding-top: 2rem; max-width: 1400px; }
+.block-container { padding-top: 4rem; max-width: 1400px; }
 
 .header { display: flex; justify-content: space-between; align-items: flex-end;
           flex-wrap: wrap; gap: 1rem; padding-bottom: 1.2rem;
