@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import math
 import random
 
@@ -20,8 +21,7 @@ def get_demo_data(component, lot, time_window):
     slope_pct = rng.randint(10, 90)    # how much of the allowed degradation slope is used (fake)
 
     # Overall risk = weighted mix of the three risk signals
-    anomaly_pct = min(100, round(anomaly_score / 4.2 * 100))
-    risk_score = round(0.4 * anomaly_pct + 0.3 * drift_pct + 0.3 * slope_pct)
+    risk_score = compute_risk(anomaly_score, drift_pct, slope_pct)
 
     if risk_score < 35:
         risk_label = "Low"
@@ -38,6 +38,7 @@ def get_demo_data(component, lot, time_window):
     trend = make_trend(rng, predicted_168h)
     features, importance, contributions = make_explain(seed, anomaly_score, drift_pct, slope_pct)
     why_text = build_why(contributions)
+    history = make_history(seed, predicted_168h, anomaly_score, drift_pct, slope_pct)
 
     # --- Module A style numbers (fake) ---
     mahalanobis = round(anomaly_score * rng.uniform(1.2, 1.8), 2)
@@ -79,6 +80,7 @@ def get_demo_data(component, lot, time_window):
         "importance": importance,
         "contributions": contributions,
         "why_text": why_text,
+        "history": history,
     }
 
 
@@ -205,3 +207,40 @@ def build_why(contributions):
     if not parts:
         return "No feature has a meaningful influence on this prediction."
     return "; ".join(parts) + "."
+
+
+
+def compute_risk(anomaly_score, drift_pct, slope_pct):
+    """Overall risk (0-100) = weighted mix of the three risk signals."""
+    anomaly_pct = min(100, round(anomaly_score / 4.2 * 100))
+    return round(0.4 * anomaly_pct + 0.3 * drift_pct + 0.3 * slope_pct)
+
+
+def make_history(seed, predicted, anomaly, drift_pct, slope_pct, n=12):
+    """FAKE past runs (one every 30 minutes). The newest row equals the current result."""
+    hrng = np.random.default_rng(seed + 13)
+
+    def walk(final, step, low, high):
+        values = [final]
+        for _ in range(n - 1):
+            values.append(min(high, max(low, values[-1] + hrng.normal(0, step))))
+        return values[::-1]          # oldest first, newest (= current) last
+
+    preds = walk(predicted, 1.5, 65, 98)
+    anoms = walk(anomaly, 0.4, 0.3, 4.8)
+    drifts = walk(drift_pct, 6, 5, 95)
+    slopes = walk(slope_pct, 6, 5, 95)
+
+    now = datetime.now().replace(second=0, microsecond=0)
+    rows = []
+    for i in range(n):
+        p, a = round(preds[i], 1), round(anoms[i], 2)
+        d, s = int(round(drifts[i])), int(round(slopes[i]))
+        rows.append({
+            "Time": now - timedelta(minutes=30 * (n - 1 - i)),
+            "Risk": compute_risk(a, d, s),
+            "Anomaly": a,
+            "Prediction": p,
+            "QA Decision": build_qa(p, a, d, s)[0],
+        })
+    return pd.DataFrame(rows)

@@ -123,3 +123,20 @@ def lime_chart(contributions):
     style(fig, height=340)
     fig.update_layout(hovermode="closest")
     return fig
+
+
+
+def trend_line(history, column, title, color, threshold=None):
+    fig = go.Figure(go.Scatter(
+        x=history["Time"], y=history[column], mode="lines+markers",
+        line=dict(color=color, width=3), marker=dict(size=7),
+        hovertemplate="%{x|%d %b, %H:%M}<br>" + column + ": %{y}<extra></extra>",
+    ))
+    if threshold is not None:
+        fig.add_hline(y=threshold, line_dash="dot", line_color=RED)
+    fig.update_xaxes(tickformat="%H:%M")
+    fig.update_layout(title=title)
+    style(fig, height=280)
+    fig.update_layout(hovermode="closest", showlegend=False,
+                      margin=dict(l=10, r=10, t=60, b=10))
+    return fig

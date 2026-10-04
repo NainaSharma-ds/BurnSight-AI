@@ -3,7 +3,7 @@ import streamlit as st
 from utils.demo_data import get_demo_data
 from utils.charts import prediction_chart, anomaly_scatter
 from utils.charts import prediction_chart, anomaly_scatter, risk_gauge
-from utils.charts import prediction_chart, anomaly_scatter, risk_gauge, importance_chart, lime_chart
+from utils.charts import prediction_chart, anomaly_scatter, risk_gauge, importance_chart, lime_chart , trend_line
 
 st.set_page_config(page_title="SIH26170 | AI Risk Monitoring", layout="wide")
 
@@ -327,3 +327,32 @@ st.markdown(
     f'<div class="why-text">{data["why_text"]}</div></div>',
     unsafe_allow_html=True,
 )
+
+# ---------- TRENDS & RECENT ANALYSIS ----------
+st.markdown('<div class="section-title">Trends &amp; Recent Analysis</div>', unsafe_allow_html=True)
+
+history = data["history"]
+
+t1, t2, t3 = st.columns(3)
+with t1:
+    st.plotly_chart(trend_line(history, "Risk", "Risk Trend (%)", AMBER), use_container_width=True)
+with t2:
+    st.plotly_chart(trend_line(history, "Anomaly", "Anomaly Trend", RED), use_container_width=True)
+with t3:
+    st.plotly_chart(trend_line(history, "Prediction", "Prediction Trend (168h)", CYAN,
+                               threshold=data["threshold"]), use_container_width=True)
+
+st.markdown('<div class="kpi-label" style="margin:0.6rem 0 0.4rem 0">Recent analysis (newest first)</div>',
+            unsafe_allow_html=True)
+
+table = history.iloc[::-1].copy()
+table["Time"] = table["Time"].dt.strftime("%d %b, %H:%M")
+table["Risk"] = table["Risk"].astype(str) + "%"
+
+
+def color_decision(value):
+    return f"color: {DECISION_COLORS[value]}; font-weight: 700"
+
+
+st.dataframe(table.style.map(color_decision, subset=["QA Decision"]),
+             hide_index=True, use_container_width=True)
