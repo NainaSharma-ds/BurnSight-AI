@@ -3,7 +3,9 @@ import streamlit as st
 import time
 from utils.demo_data import get_demo_data
 from utils.report import build_report
+from utils.api import get_api_data
 from utils.charts import prediction_chart, anomaly_scatter, risk_gauge, importance_chart, lime_chart, trend_line
+USE_API = False     # False = demo data (works anywhere).  True = real FastAPI backend.
 st.set_page_config(page_title="SIH26170 | AI Risk Monitoring", layout="wide")
 
 # ---------- STYLES (all custom CSS lives here) ----------
@@ -81,6 +83,8 @@ st.markdown(CSS, unsafe_allow_html=True)
 
 # ---------- HEADER ----------
 now = datetime.now().strftime("%d %b %Y, %H:%M:%S")
+mode_pill = ('<span class="pill pill-ok">LIVE</span>' if USE_API
+             else '<span class="pill pill-demo">DEMO MODE</span>')
 
 st.markdown(f"""
 <div class="header">
@@ -90,7 +94,7 @@ st.markdown(f"""
 <div class="tagline">Burn-in intelligence • Anomaly detection • 168h prediction • QA decision support</div>
 </div>
 <div class="pills">
-<span class="pill pill-demo">DEMO MODE</span>
+{mode_pill}
 <span class="pill pill-ok"><span class="dot"></span>SYSTEM ONLINE</span>
 <span class="pill pill-time">Updated {now}</span>
 </div>
@@ -127,17 +131,27 @@ with st.sidebar:
 
     st.divider()
     st.caption("SYSTEM INFORMATION")
+    mode_text = "Live backend" if USE_API else "Demo data"
+    backend_text = "Live (API)" if USE_API else "Not connected"
     st.markdown(
-        """
-- **Mode:** Demo data
-- **Backend:** Not connected
+        f"""
+- **Mode:** {mode_text}
+- **Backend:** {backend_text}
 - **Module A:** Mahalanobis + LOF
 - **Module B:** XGBoost
 """
     )
 
 # ---------- LOAD DATA (demo for now) ----------
-data = get_demo_data(component, lot, time_window)
+if USE_API:
+    try:
+        data = get_api_data(component, lot, time_window)
+    except Exception as error:
+        st.error(f"Could not load data from the backend ({error}). "
+                 "Check that the FastAPI server is running, or set USE_API = False in app.py.")
+        st.stop()
+else:
+    data = get_demo_data(component, lot, time_window)
 detailed = (mode == "Detailed Analysis")
 
 # ---------- RUN ANALYSIS FEEDBACK ----------
