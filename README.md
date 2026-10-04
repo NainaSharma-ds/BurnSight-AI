@@ -104,24 +104,36 @@ This helps explore how changes in early component behaviour can affect the final
 ## System Architecture
 
 ```text
-Burn-In Measurements
-  0h | 24h | 96h | 168h
-          ↓
-Data Preprocessing
-          ↓
- ┌────────┴────────┐
- ↓                 ↓
-Anomaly          168h
-Detection       Prediction
- ↓                 ↓
-Mahalanobis      XGBoost
- + LOF           Regressor
- └────────┬────────┘
-          ↓
-      Risk Engine
-          ↓
-     QA Decision
-          ↓
-    Explainability
-          ↓
-     QA Dashboard
+                    BURN-IN DATA
+              0h | 24h | 96h | 168h
+                         ↓
+              DATA PREPROCESSING
+        Feature Engineering • Lot Analysis
+                         ↓
+          ┌──────────────┴──────────────┐
+          ↓                             ↓
+   MODULE A: ANOMALY              MODULE B: PREDICTION
+      DETECTION                       168h Forecast
+          ↓                             ↓
+   24h Early Screening             XGBoost
+          ↓                             ↓
+   96h Re-screening            Predicted 168h Value
+          ↓                             ↓
+ Mahalanobis + LOF                     │
+          └──────────────┬──────────────┘
+                         ↓
+                    RISK ENGINE
+          Anomaly + Predicted Drift
+              + Safety Reference
+                         ↓
+                  QA DECISION ENGINE
+              PASS | MONITOR |
+          EXTENDED SCREENING | REJECT
+                         ↓
+                  EXPLAINABLE AI
+           LIME + Permutation Importance
+                 + QA Rule Engine
+                         ↓
+                  WHAT-IF ANALYSIS
+                         ↓
+                   QA DASHBOARD
