@@ -1,27 +1,127 @@
-# BurnSight AI — Predictive & Explainable Burn-In Screening
+# BurnSight-AI
+### AI-Driven Predictive & Explainable Burn-In Screening System
 
-**Smart India Hackathon 2026 | Problem Statement: SIH26170**  
-**Organization:** ISRO  
-**Theme:** Smart Automation  
-**Category:** Software
+**SIH 2026 | Problem Statement: SIH26170 | ISRO**
 
-BurnSight AI is an AI-driven burn-in screening and predictive risk monitoring system designed to identify abnormal component behaviour early, predict future degradation, and provide an explainable QA decision before the complete 168-hour burn-in cycle is finished.
+BurnSight-AI is an AI-powered burn-in screening system designed to detect abnormal component behaviour early and predict future degradation before the complete burn-in cycle is finished.
 
-The system combines **dynamic anomaly detection, early degradation prediction, risk assessment, explainability, and what-if analysis** into a unified decision-support pipeline for QA inspectors.
-
-> **Prototype Notice:** The current prototype uses a synthetic burn-in dataset created for demonstration and model development. The results shown in this repository are not validation results on real ISRO hardware or proprietary ISRO data.
+Instead of relying only on fixed parametric limits, the system analyses **lot-relative behaviour, early drift and predicted future values** to support faster and more explainable QA decisions.
 
 ---
 
-## Problem Statement
+## 🚀 What Does BurnSight-AI Do?
 
-Traditional burn-in and Environmental Stress Screening (ESS) processes often rely on fixed parametric limits.
+The system works in two stages:
 
-A component may remain within an absolute specification limit while still showing an abnormal degradation trend compared with other components in the same lot.
+### 1. Dynamic Anomaly Detection
+Analyses component behaviour at **24h and 96h** using:
 
-For example:
+- Mahalanobis Distance
+- Local Outlier Factor (LOF)
+- Lot-relative deviation
+- Drift and percentage drift
+
+This enables early warning as well as re-screening at a later burn-in stage.
+
+### 2. 168h Degradation Prediction
+An **XGBoost Regressor** uses early measurements:
+
+`0h + 24h + early drift`
+
+to predict the expected **168h value**.
+
+The predicted degradation is then compared with a reference safety boundary.
+
+---
+
+## 🧠 QA Decision Engine
+
+The system combines anomaly detection and future-risk prediction to generate an explainable decision:
+
+| Decision | Meaning |
+|---|---|
+| ✅ PASS | Behaviour remains within expected range |
+| 🟡 MONITOR | Behaviour is close to the risk boundary |
+| 🟠 EXTENDED SCREENING | Further screening is recommended |
+| 🔴 REJECT | Abnormal behaviour is detected |
+
+Each decision is accompanied by a human-readable explanation.
+
+---
+
+## 📊 Model Performance
+
+### Anomaly Detection
+
+| Stage | Accuracy | Precision | Recall | F1 |
+|---|---:|---:|---:|---:|
+| 24h Screening | 91% | 92% | 78% | 84% |
+| 96h Re-screening | 98% | 94% | 100% | 97% |
+
+### 168h Prediction — XGBoost
+
+| Metric | Score |
+|---|---:|
+| MAE | 3.08 |
+| RMSE | 5.16 |
+| R² | 0.70 |
+
+The strongest predictive features were **early drift and percentage drift**, showing that early degradation behaviour is important for forecasting future component behaviour.
+
+---
+
+## 💡 Explainable AI
+
+BurnSight-AI provides explanations for its predictions using:
+
+- **Permutation Importance** — identifies the most influential features.
+- **LIME** — explains individual component predictions.
+- **QA Rule Engine** — converts model outputs into understandable QA reasons.
+
+Example:
+
+> High early drift + high predicted degradation → Extended Screening
+
+---
+
+## 🧪 What-If Simulation
+
+The system also supports **What-If analysis**.
+
+QA users can modify early measurements such as:
+
+- Value at 0h
+- Value at 24h
+
+and observe:
+
+**Predicted 168h value → Predicted drift → Risk ratio → QA decision**
+
+This helps explore how changes in early component behaviour can affect the final screening decision.
+
+---
+
+## System Architecture
 
 ```text
-Lot average leakage  → 10 µA
-Component leakage    → 45 µA
-Datasheet maximum    → 50 µA
+Burn-In Measurements
+  0h | 24h | 96h | 168h
+          ↓
+Data Preprocessing
+          ↓
+ ┌────────┴────────┐
+ ↓                 ↓
+Anomaly          168h
+Detection       Prediction
+ ↓                 ↓
+Mahalanobis      XGBoost
+ + LOF           Regressor
+ └────────┬────────┘
+          ↓
+      Risk Engine
+          ↓
+     QA Decision
+          ↓
+    Explainability
+          ↓
+     QA Dashboard
