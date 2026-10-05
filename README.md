@@ -138,3 +138,27 @@ This helps explore how changes in early component behaviour can affect the final
                   WHAT-IF ANALYSIS
                          ↓
                    QA DASHBOARD
+```
+
+## Run Locally
+
+From the repository root, install the frontend dependencies and start the
+Streamlit dashboard:
+
+```powershell
+python -m pip install -r requirements.txt
+python -m streamlit run frontend/app.py
+```
+
+The dashboard starts in demo mode by default. To use the real prediction
+models, install the backend dependencies in the same Python environment,
+start the API in a second terminal, and set `USE_API = True` in
+`frontend/app.py`:
+
+```powershell
+python -m pip install -r backend/requirements.txt
+python -m uvicorn backend.main:app --reload
+```
+
+The dashboard is available at `http://localhost:8501`; the API health check
+is available at `http://127.0.0.1:8000/health`.

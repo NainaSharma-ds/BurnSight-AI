@@ -1,11 +1,11 @@
-from datetime import datetime
+﻿from datetime import datetime
 import streamlit as st
 import time
 from utils.demo_data import get_demo_data
 from utils.report import build_report
-from utils.api import get_api_data, backend_online
+from utils.api import get_api_data, backend_online, get_components, get_lots
 from utils.charts import prediction_chart, anomaly_scatter, risk_gauge, importance_chart, lime_chart, trend_line
-USE_API = False     # False = demo data (works anywhere).  True = real FastAPI backend.
+USE_API = True      # Use the FastAPI backend for live predictions.
 PREDICTED_UNIT = ""     # unit of the predicted 168h value. Not defined yet, so left empty. Ask the model team.
 
 def demo_note():
@@ -122,22 +122,49 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ---------- SIDEBAR ----------
+if USE_API:
+    try:
+        components = get_components()
+    except RuntimeError as error:
+        st.error(f"Could not load component list: {error}")
+        st.stop()
+
+    if not components:
+        st.error("The backend dataset contains no components.")
+        st.stop()
+else:
+    components = [f"C{number:04d}" for number in range(1, 11)]
+
 with st.sidebar:
     st.markdown("### Controls")
 
     component = st.selectbox(
         "Component",
-        ["COMP-001", "COMP-002", "COMP-003"],
+        components,
         help="Which component's burn-in data to analyse.",
     )
+
+    if USE_API:
+        try:
+            lots = get_lots(component)
+        except RuntimeError as error:
+            st.error(f"Could not load lots for {component}: {error}")
+            st.stop()
+
+        if not lots:
+            st.error(f"No lots were found for component {component}.")
+            st.stop()
+    else:
+        lots = ["L01"]
+
     lot = st.selectbox(
         "Lot",
-        ["LOT-2026-A", "LOT-2026-B"],
+        lots,
         help="Manufacturing lot the component belongs to.",
     )
     time_window = st.select_slider(
         "Time Window",
-        options=["0h", "24h", "48h", "96h", "168h"],
+        options=["24h", "96h", "168h"],
         value="168h",
         help="How many burn-in hours of data to include.",
     )
@@ -162,7 +189,7 @@ with st.sidebar:
 """
     )
 
-# ---------- LOAD DATA (demo for now) ----------
+# ---------- LOAD DATA ----------
 if USE_API:
     try:
         data = get_api_data(component, lot, time_window)
@@ -182,7 +209,12 @@ if run_clicked:
                      "Risk engine and QA decision", "Generating explanations"]:
             st.write(f"✓ {step}")
             time.sleep(0.4)
-        status.update(label="Analysis complete (demo data)", state="complete", expanded=False)
+        result_source = "live backend" if USE_API else "demo data"
+        status.update(
+            label=f"Analysis complete ({result_source})",
+            state="complete",
+            expanded=False,
+        )
 
 # ---------- KPI CARDS ----------
 GREEN, AMBER, ORANGE, RED, CYAN = "#34d399", "#fbbf24", "#fb923c", "#f87171", "#22d3ee"
@@ -385,29 +417,34 @@ st.markdown('<div class="section-title">Trends &amp; Recent Analysis</div>', uns
 with st.expander("Trend charts and recent analysis table", expanded=detailed):
     history = data["history"]
 
-    t1, t2, t3 = st.columns(3)
-    with t1:
-        st.plotly_chart(trend_line(history, "Risk", "Risk Trend (%)", AMBER), width="stretch")
-    with t2:
-        st.plotly_chart(trend_line(history, "Anomaly", "Anomaly Trend", RED), width="stretch")
-    with t3:
-        st.plotly_chart(trend_line(history, "Prediction", "Prediction Trend (168h)", CYAN,
-                                   threshold=data["threshold"]), width="stretch")
+    if "Risk" in history.columns:
+        t1, t2, t3 = st.columns(3)
+        with t1:
+            st.plotly_chart(trend_line(history, "Risk", "Risk Trend (%)", AMBER), width="stretch")
+        with t2:
+            st.plotly_chart(trend_line(history, "Anomaly", "Anomaly Trend", RED), width="stretch")
+        with t3:
+            st.plotly_chart(trend_line(history, "Prediction", "Prediction Trend (168h)", CYAN,
+                                       threshold=data["threshold"]), width="stretch")
 
-    st.markdown('<div class="kpi-label" style="margin:0.6rem 0 0.4rem 0">Recent analysis (newest first)</div>',
-                unsafe_allow_html=True)
+        table = history.iloc[::-1].copy()
+        table["Risk"] = table["Risk"].astype(str) + "%"
 
-    table = history.iloc[::-1].copy()
-    table["Time"] = table["Time"].dt.strftime("%d %b, %H:%M")
-    table["Risk"] = table["Risk"].astype(str) + "%"
+        def color_decision(value):
+            return f"color: {DECISION_COLORS[value]}; font-weight: 700"
 
-    def color_decision(value):
-        return f"color: {DECISION_COLORS[value]}; font-weight: 700"
-
-    styled = (table.style
-              .format({"Anomaly": "{:.2f}", "Prediction": "{:.1f}"})
-              .map(color_decision, subset=["QA Decision"]))
-    st.dataframe(styled, hide_index=True, width="stretch")
+        styled = (table.style
+                  .format({"Anomaly": "{:.2f}", "Prediction": "{:.1f}"})
+                  .map(color_decision, subset=["QA Decision"]))
+        st.dataframe(styled, hide_index=True, width="stretch")
+    elif {"Time", "Value"}.issubset(history.columns):
+        st.plotly_chart(
+            trend_line(history, "Value", "Burn-in Measurement History", CYAN),
+            width="stretch",
+        )
+        st.dataframe(history.iloc[::-1], hide_index=True, width="stretch")
+    else:
+        raise ValueError("Analysis history is missing the expected trend fields.")
 
 # ---------- EXPORT ----------
 st.markdown('<div class="section-title">Export</div>', unsafe_allow_html=True)

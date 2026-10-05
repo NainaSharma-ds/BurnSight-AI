@@ -46,22 +46,44 @@ def prediction_chart(trend, threshold):
 
 
 def anomaly_scatter(population, unit_xy, anomaly_score, unit_color):
+    if {"x", "y"}.issubset(population.columns):
+        x_values, y_values = population["x"], population["y"]
+        x_unit, y_unit = unit_xy[0], unit_xy[1]
+        x_title, y_title = "Temperature drift (scaled)", "Current drift (scaled)"
+        scaled = True
+    elif {"Value_0h", "Value_24h"}.issubset(population.columns):
+        x_values, y_values = population["Value_0h"], population["Value_24h"]
+        x_unit, y_unit = unit_xy[0], unit_xy[1]
+        x_title, y_title = "0h performance value", "24h performance value"
+        scaled = False
+    else:
+        raise ValueError("Population data must contain x/y or Value_0h/Value_24h.")
+
     fig = go.Figure()
     fig.add_trace(go.Scatter(
-        x=population["x"], y=population["y"], mode="markers", name="Normal units",
+        x=x_values, y=y_values, mode="markers", name="Units in selected lot",
         marker=dict(color=CYAN, size=7, opacity=0.45),
-        hovertemplate="Normal unit<extra></extra>",
+        hovertemplate="Dataset unit<extra></extra>",
     ))
     fig.add_trace(go.Scatter(
-        x=[unit_xy[0]], y=[unit_xy[1]], mode="markers", name="Selected unit",
+        x=[x_unit], y=[y_unit], mode="markers", name="Selected unit",
         marker=dict(color=unit_color, size=17, symbol="star", line=dict(color="white", width=1)),
         hovertemplate=f"Selected unit<br>Anomaly score: {anomaly_score}<extra></extra>",
     ))
-    # dotted circle = "normal" boundary
-    fig.add_shape(type="circle", x0=-3, y0=-3, x1=3, y1=3,
-                  line=dict(color=RED, dash="dot", width=1.5))
-    fig.update_xaxes(title="Temperature drift (scaled)", range=[-5, 5])
-    fig.update_yaxes(title="Current drift (scaled)", range=[-5, 5], scaleanchor="x")
+
+    if scaled:
+        fig.add_shape(type="circle", x0=-3, y0=-3, x1=3, y1=3,
+                      line=dict(color=RED, dash="dot", width=1.5))
+        fig.update_xaxes(title=x_title, range=[-5, 5])
+        fig.update_yaxes(title=y_title, range=[-5, 5], scaleanchor="x")
+    else:
+        x_min, x_max = min(min(x_values), x_unit), max(max(x_values), x_unit)
+        y_min, y_max = min(min(y_values), y_unit), max(max(y_values), y_unit)
+        x_padding = max((x_max - x_min) * 0.1, abs(x_min) * 0.01, 0.01)
+        y_padding = max((y_max - y_min) * 0.1, abs(y_min) * 0.01, 0.01)
+        fig.update_xaxes(title=x_title, range=[x_min - x_padding, x_max + x_padding])
+        fig.update_yaxes(title=y_title, range=[y_min - y_padding, y_max + y_padding])
+
     fig.update_layout(title="Normal vs Anomalous Units")
     style(fig)
     fig.update_layout(hovermode="closest")
