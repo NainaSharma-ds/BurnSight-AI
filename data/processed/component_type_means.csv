@@ -1,0 +1,5 @@
+Component_Type,Value_0h,Value_24h,Value_96h,Value_168h
+Gradual_Degradation,10.035,12.015,16.979,24.972
+Latent_Defect,9.915,16.862,28.583,42.761
+Normal,10.013,10.518,11.506,12.52
+Sudden_Degradation,10.082,10.565,25.583,30.61
