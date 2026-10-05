@@ -8,6 +8,9 @@ BurnSight-AI is an AI-powered burn-in screening system designed to detect abnorm
 Instead of relying only on fixed parametric limits, the system analyses **lot-relative behaviour, early drift and predicted future values** to support faster and more explainable QA decisions.
 
 ---
+## 🎥 PROTOTYPE DEMO (YT LINK)
+
+▶️ **[Watch the BurnSight-AI Prototype Demo on YouTube](https://youtu.be/2aIapldTpCE?si=AxbXhU9hhrK-gk8J)**
 
 ##  What Does BurnSight-AI Do?
 
