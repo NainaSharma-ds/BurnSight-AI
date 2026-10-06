@@ -14,16 +14,16 @@ Instead of relying only on fixed parametric limits, the system analyses **lot-re
 
 ## 🖥️ Prototype Screenshots
 ## 📊 Main Dashboard:
-<img width="750" height="404" alt="main_dashboard" src="https://github.com/user-attachments/assets/232d5782-6b1e-4d19-9beb-6e1baa666ad6" />
+<img width="600" height="323" alt="main_dashboard" src="https://github.com/user-attachments/assets/232d5782-6b1e-4d19-9beb-6e1baa666ad6" />
 
 ## 🔍 Anomaly Analysis
-<img width="750" height="404" alt="anamoly analysis" src="https://github.com/user-attachments/assets/2d37313c-48e4-48c8-8670-bfc5bdc446ca" />
+<img width="600" height="323" alt="anamoly analysis" src="https://github.com/user-attachments/assets/2d37313c-48e4-48c8-8670-bfc5bdc446ca" />
 
 ## ⚠️ Risk Engine & QA Decision
-<img width="750" height="404" alt="riskengine" src="https://github.com/user-attachments/assets/c79cf600-6634-4372-9539-7b6e343515af" />
+<img width="600" height="323" alt="riskengine" src="https://github.com/user-attachments/assets/c79cf600-6634-4372-9539-7b6e343515af" />
 
 ## 🧠 Explainable AI
-<img width="750" height="404" alt="xai" src="https://github.com/user-attachments/assets/f39afda5-0939-4762-85f0-095fda1db8a2" />
+<img width="600" height="323" alt="xai" src="https://github.com/user-attachments/assets/f39afda5-0939-4762-85f0-095fda1db8a2" />
 
 ##  What Does BurnSight-AI Do?
 
