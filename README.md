@@ -3,12 +3,12 @@
 
 **SIH 2026 | Problem Statement: SIH26170 | ISRO**
 
-BurnSight-AI is an AI-powered burn-in screening system designed to detect abnormal component behaviour early and predict future degradation before the complete burn-in cycle is finished.
+BurnSight-AI is an AI-powered burn-in screening system designed to detect abnormal component behaviour early and predict future degradation before completion of the full 168-hour burn-in cycle.
 
 Instead of relying only on fixed parametric limits, the system analyses **lot-relative behaviour, early drift and predicted future values** to support faster and more explainable QA decisions.
 
 ---
-## 🎥 PROTOTYPE DEMO (YT LINK)
+## 🎥 PROTOTYPE DEMO
 
 ▶️ **[Watch the BurnSight-AI Prototype Demo on YouTube](https://youtu.be/2aIapldTpCE?si=AxbXhU9hhrK-gk8J)**
 
