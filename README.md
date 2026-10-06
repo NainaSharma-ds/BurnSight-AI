@@ -13,7 +13,7 @@ Instead of relying only on fixed parametric limits, the system analyses **lot-re
 ▶️ **[Watch the BurnSight-AI Prototype Demo on YouTube](https://youtu.be/2aIapldTpCE?si=AxbXhU9hhrK-gk8J)**
 
 ## 🖥️ Prototype Screenshots
-### 📊 Main Dashboard: ![BurnSight-AI Dashboard]<img width="1600" height="861" alt="main_dashboard" src="https://github.com/user-attachments/assets/232d5782-6b1e-4d19-9beb-6e1baa666ad6" />
+### 📊 Main Dashboard: <img width="750" height="404" alt="main_dashboard" src="https://github.com/user-attachments/assets/232d5782-6b1e-4d19-9beb-6e1baa666ad6" />
 
 
 ##  What Does BurnSight-AI Do?
