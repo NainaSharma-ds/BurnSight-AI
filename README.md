@@ -13,16 +13,16 @@ Instead of relying only on fixed parametric limits, the system analyses **lot-re
 ▶️ **[Watch the BurnSight-AI Prototype Demo on YouTube](https://youtu.be/2aIapldTpCE?si=AxbXhU9hhrK-gk8J)**
 
 ## 🖥️ Prototype Screenshots
-## 📊 Main Dashboard:
+### 📊 Main Dashboard:
 <img width="600" height="323" alt="main_dashboard" src="https://github.com/user-attachments/assets/232d5782-6b1e-4d19-9beb-6e1baa666ad6" />
 
-## 🔍 Anomaly Analysis
+### 🔍 Anomaly Analysis
 <img width="600" height="323" alt="anamoly analysis" src="https://github.com/user-attachments/assets/2d37313c-48e4-48c8-8670-bfc5bdc446ca" />
 
-## ⚠️ Risk Engine & QA Decision
+### ⚠️ Risk Engine & QA Decision
 <img width="600" height="323" alt="riskengine" src="https://github.com/user-attachments/assets/c79cf600-6634-4372-9539-7b6e343515af" />
 
-## 🧠 Explainable AI
+### 🧠 Explainable AI
 <img width="600" height="323" alt="xai" src="https://github.com/user-attachments/assets/f39afda5-0939-4762-85f0-095fda1db8a2" />
 
 ##  What Does BurnSight-AI Do?
@@ -156,25 +156,4 @@ This helps explore how changes in early component behaviour can affect the final
                    QA DASHBOARD
 ```
 
-## Run Locally
 
-From the repository root, install the frontend dependencies and start the
-Streamlit dashboard:
-
-```powershell
-python -m pip install -r requirements.txt
-python -m streamlit run frontend/app.py
-```
-
-The dashboard starts in demo mode by default. To use the real prediction
-models, install the backend dependencies in the same Python environment,
-start the API in a second terminal, and set `USE_API = True` in
-`frontend/app.py`:
-
-```powershell
-python -m pip install -r backend/requirements.txt
-python -m uvicorn backend.main:app --reload
-```
-
-The dashboard is available at `http://localhost:8501`; the API health check
-is available at `http://127.0.0.1:8000/health`.
